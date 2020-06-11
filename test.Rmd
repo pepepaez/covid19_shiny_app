@@ -1,0 +1,41 @@
+---
+title: "Reporte COVID19 Mexico"
+author: "Jose Paez"
+date: "6/6/2020"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+source("functions.r")
+
+```
+Grafica logaritmica del progreso de la contingencia en la entidad seleccionada, **esta informacion esta ajustada al dia en que se registraron sintomas**, esto provoca que durante los ultimos 10 dias de la grafica se aprecie una disminucion drastica que no es real, esto es porque con el paso de los dias esta grafica se actualiza para asignar los nuevos casos a la fecha de inicio de sintomas. **El area sombreada en cada grafica representa los ultimos 14 dias en los cuales es alta la probabilidad de que se documenten casos con inicio de sintomas en esas fechas.**
+
+```{r echo=FALSE, fig.width=1, message=FALSE, warning=FALSE}
+datos <- por_captura
+colnames(datos) <- append("FECHA",colnames(datos)[-1])
+p <- topchart(datos, 2)
+p <- p %>% layout(autosize = F, width = 1200, height = 600)
+tmpFile<-tempfile(fileext = ".png")
+export(p, file = tmpFile)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+:::::::::::::: {.columns}
+::: {.column width="40%"}
+contents..
+:::
+::: {.column width="60%"}
+contents...
+:::
+::::::::::::::
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
