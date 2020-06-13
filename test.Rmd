@@ -25,15 +25,6 @@ export(p, file = tmpFile)
 
 You can also embed plots, for example:
 
-:::::::::::::: {.columns}
-::: {.column width="40%"}
-contents..
-:::
-::: {.column width="60%"}
-contents...
-:::
-::::::::::::::
-
 ```{r pressure, echo=FALSE}
 plot(pressure)
 ```
