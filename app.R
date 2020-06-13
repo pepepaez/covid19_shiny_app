@@ -23,8 +23,9 @@ ui <- fluidPage(
                selectInput("municipio", "Municipio:", municipios)),
         column(3,
                radioButtons("fuente", "Fuente:", c("Por Fecha de Captura", "Por Fecha de Sintomas")))),
-    plotlyOutput("topChart"),
-    
+    column(6, plotlyOutput("topChart")),
+    column(6, plotlyOutput("distCases")),
+
     fluidRow(
         column(6,
                plotlyOutput("mvg_avg_ratio")),
@@ -77,6 +78,36 @@ server <- function(input, output, session) {
     }
   })
   
+  data_set_dist = reactive({
+    datos <- ayer
+    colnames(datos) <- append("FECHA",colnames(datos)[-1])
+    if(input$entidad == "TODOS LOS ESTADOS"){
+      datos
+    } else {
+      clave_entidad <- index_entidades[index_entidades["ENTIDAD_FEDERATIVA"]==input$entidad,]$CLAVE_ENTIDAD
+      if(input$municipio == "TODOS"){
+        subset(datos, ENTIDAD_RES == as.integer(clave_entidad))
+      } else {
+        clave_municipio <- index_municipios[index_municipios["MUNICIPIO"]==input$municipio,]$CLAVE_MUNICIPIO
+        subset(datos, ENTIDAD_RES == as.integer(clave_entidad) & MUNICIPIO_RES == as.integer(clave_municipio) )
+      }
+    }
+  })
+  
+  data_set_dist_cases = reactive({
+    if(input$entidad == "TODOS LOS ESTADOS"){
+      both
+    } else {
+      clave_entidad <- index_entidades[index_entidades["ENTIDAD_FEDERATIVA"]==input$entidad,]$CLAVE_ENTIDAD
+      if(input$municipio == "TODOS"){
+        subset(both, ENTIDAD_RES == as.integer(clave_entidad))
+      } else {
+        clave_municipio <- index_municipios[index_municipios["MUNICIPIO"]==input$municipio,]$CLAVE_MUNICIPIO
+        subset(both, ENTIDAD_RES == as.integer(clave_entidad) & MUNICIPIO_RES == as.integer(clave_municipio) )
+      }
+    }
+  })
+  
   data_source = reactive({
     if(input$fuente == "Por Fecha de Captura"){
       2
@@ -98,6 +129,10 @@ server <- function(input, output, session) {
 
     output$topChart <- renderPlotly({
        topchart(data_set(), data_source())
+    })
+    
+    output$distCases <- renderPlotly({
+      distCases(data_set_dist_cases(), data_set_dist())
     })
     
     output$mvg_avg_ratio <- renderPlotly({
