@@ -38,7 +38,8 @@ save.image()
 ###########################
 require(dplyr)
 temp <- tempfile()
-download.file("http://187.191.75.115/gobmx/salud/datos_abiertos/historicos/datos_abiertos_covid19_15.06.2020.zip",temp)
+
+download.file("http://187.191.75.115/gobmx/salud/datos_abiertos/historicos/datos_abiertos_covid19_29.06.2020.zip",temp)
 file_name <- unzip(temp, list = TRUE)$Name[1]
 ayer <- read.table(unz(temp, file_name), sep = ",", header = TRUE)
 unlink(temp)
