@@ -25,17 +25,6 @@ dark_yellow <- "#C78C40"
 light_yellow <- "#F9AF51"
 light_ocean <- "#DFE9EB50"
 
-
-
-
-entidades <- catalogo[["Catálogo de ENTIDADES"]]$ENTIDAD_FEDERATIVA[1:32]
-entidades <- append("TODOS LOS ESTADOS",entidades)
-
-municipios <- c("TODOS")
-
-index_entidades <- catalogo[["Catálogo de ENTIDADES"]]
-index_municipios <- catalogo[["Catálogo MUNICIPIOS"]]
-
 l <- list(
   bgcolor = "#DFE9EB80",
   bordercolor = "#000000",
@@ -43,15 +32,7 @@ l <- list(
   x = 0.01,
   y = 0.8)
 
-get_cities <- function(entidad){
-  clave_entidad <- ""
-  municipios <- c("TODOS")
-  if(entidad != "TODOS LOS ESTADOS"){
-    clave_entidad <- index_entidades[index_entidades["ENTIDAD_FEDERATIVA"]==entidad,]$CLAVE_ENTIDAD
-    
-    municipios <- append(municipios, subset(index_municipios, CLAVE_ENTIDAD == clave_entidad)$MUNICIPIO)
-  }
-}
+
 
 ## for testing purposes only
 # data <- por_sintomas
@@ -73,16 +54,24 @@ topchart <- function(data, data_source = 1){
     data <- mutate(data, casos= total - lag(total,1))
   }
 
+  max_diarios <- max(data$casos, na.rm = T) * 2
+  max_activos <- max(data$activos, na.rm = T) * 1.3
+  
+  if(data_source == 1){
+    max_range <- max_diarios
+  } else {
+    max_range <- max(max_diarios, max_activos)
+  }
   
   fig <- plot_ly(data, x = ~FECHA, y = ~total, type = "scatter", mode = "lines", name = "Casos Acumulados", line = list(shape= "spline", smoothing = 3, color = light_red, width = 1))
-  fig <- fig %>% add_trace(y = ~casos, name = "Casos Diarios", line = list(shape= "spline", smoothing = 3, color = light_yellow))
+  fig <- fig %>% add_trace(y = ~casos, name = "Casos Diarios", yaxis = "y2", line = list(shape= "spline", smoothing = 3, color = light_yellow))
   if(data_source == 1){
     fig <- fig %>% layout(shapes = list(list(type="rect", fillcolor = light_ocean, line=list(color = light_ocean), opacity = 1, x0=today() - days(12), x1 = today(), xref = "x", y0=min(data$casos), y1=max(data$total), yref = "y")))
     note_a <- format(subset(data, FECHA == today() - days(12))$total, big.mark = ",", scientific = F)
     ypos_a <- log10(subset(data, FECHA == today() - days(12))$total)
     
     note_b <- format(subset(data, FECHA == today() - days(12))$casos, big.mark = ",", scientific = F) 
-    ypos_b <- log10(subset(data, FECHA == today() - days(12))$casos)
+    ypos_b <- subset(data, FECHA == today() - days(12))$casos
     
     note_date <- format(subset(data, FECHA == today() - days(12))$FECHA, "%b %d")
     xpos <- subset(data, FECHA == today() - days(12))$FECHA
@@ -92,21 +81,21 @@ topchart <- function(data, data_source = 1){
     ypos_a <- log10(tail(data,1)$total)
     
     note_b <- format(tail(data,1)$casos, big.mark = ",", scientific = F) 
-    ypos_b <- log10(tail(data,1)$casos)
+    ypos_b <- tail(data,1)$casos
     
     note_c <- format(tail(data,1)$activos, big.mark = ",", scientific = F) 
-    ypos_c <- log10(tail(data,1)$activos)
+    ypos_c <- tail(data,1)$activos
     
     note_date <- format(tail(data,1)$FECHA, "%b %d")
     xpos <- tail(data,1)$FECHA
     
-    fig <- fig %>% add_trace( y = ~activos, name = "Casos Activos", line = list(shape = "spline", smoothing = 3, color =light_blue))
+    fig <- fig %>% add_trace( y = ~activos, name = "Casos Activos", yaxis = "y2", line = list(shape = "spline", smoothing = 3, color =light_blue))
     fig <- fig %>% add_annotations(text=paste('Activos:', note_c),
-                                   xref = "x", yref= "y", x = xpos, y = ypos_c, 
+                                   xref = "x", yref= "y2", x = xpos, y = ypos_c, 
                                    xanchor = "right", yanchor = "middle", showarrow = T, font = list(color = dark_blue),
                                    arrowcolor = dark_blue, arrowsize = 2, arrowwidth = 1, arrowhead = 6)
     }
-  fig <- fig %>% layout(yaxis = list( type = "log", title = "Escala Logaritmica", fixedrange = TRUE, showline = T), legend = l, hovermode = "compare", xaxis = list(fixedrange = TRUE, title = "", showline = T), title = list(text = "F1 - Comportamiento Actual", anchor = "left", xref = "paper", x=0))
+  fig <- fig %>% layout(yaxis = list( type = "log", title = "Escala Logaritmica", fixedrange = TRUE, showline = T), yaxis2 = list( showline = T, side = "right", overlaying = "y", title = "Escala Lineal Casos Activos y Diarios", fixedrange = TRUE, automargin = T, range = c(0,max_range)),legend = l, hovermode = "compare", xaxis = list(fixedrange = TRUE, title = "", showline = T), title = list(text = "F1 - Comportamiento Actual", anchor = "left", xref = "paper", x=0))
   
   fig <- fig %>% add_annotations(text=paste('Acumulados:', note_a,"<br>",note_date),
                   xref = "x", yref= "y", x = xpos, y = ypos_a, 
@@ -114,7 +103,7 @@ topchart <- function(data, data_source = 1){
                   arrowcolor = dark_red, arrowsize = 2, arrowwidth = 1, arrowhead = 6)
   
   fig <- fig %>% add_annotations(text=paste('Diarios:',note_b),
-                                 xref = "x", yref= "y", x = xpos, y = ypos_b, 
+                                 xref = "x", yref= "y2", x = xpos, y = ypos_b, 
                                  xanchor = "right", yanchor = "middle", showarrow = T, font = list(color = dark_yellow),
                                  arrowcolor = dark_yellow, arrowsize = 2, arrowwidth = 1, arrowlength = 3, arrowhead = 6)
   fig <- fig %>% add_annotations(text =  paste("Grafica logaritmica del progreso de la contingencia en la entidad seleccionada.<br><b>Entre mas plana se vea esta grafica se toma como indicador de que la velocidad<br>de transmision y la tasa de contagio esta disminuyendo o ha llegado a su limite</b>.<br>"),
@@ -132,20 +121,36 @@ distCases <- function(casos_nuevos, historico){
   casos_nuevos <- casos_nuevos %>% mutate(FECHA = as.Date(FECHA, "%Y-%m-%d")) %>% arrange(FECHA)
   casos_nuevos <- casos_nuevos %>% group_by(FECHA) %>%summarise(casos_nuevos = sum(casos))
   
+  pendientes <- historico
+  porcentaje <- historico
+  
   historico <- historico %>% filter(RESULTADO == 1) 
   historico <- historico %>% group_by(FECHA) %>%summarise(casos_anteriores = sum(hombres + mujeres + sexo_no_especificado))
-
-  data <- left_join(historico, casos_nuevos, by = "FECHA")
   
-  fig <- plot_ly(data, x = ~FECHA, y = ~casos_anteriores, type = "bar", name = "Casos Previos", marker = list(color = light_yellow))
-  fig <- fig %>% add_trace(y = ~casos_nuevos, name = "Casos Nuevos", marker = list(color = light_red))
+  pendientes <- pendientes %>% filter(RESULTADO == 3)
+  pendientes <- pendientes %>% group_by(FECHA) %>%summarise(casos_pendientes = sum(hombres + mujeres + sexo_no_especificado))
   
-  fig <- fig %>% layout(barmode = "stack", yaxis = list( title = "Escala", fixedrange = TRUE, showline = T), legend = l, hovermode = "compare", xaxis = list(range = c(as.Date("2020-03-18"), today()),fixedrange = TRUE, title = "", showline = T), title = list(text = "F2 - Casos Nuevos por Fecha de Sintomas", anchor = "left", xref = "paper", x=0))
+  porcentaje <- porcentaje %>% group_by(FECHA) %>%summarise(pct_positivos = sum(hombres[RESULTADO == 1] + mujeres[RESULTADO == 1] + sexo_no_especificado[RESULTADO == 1])/sum(hombres+ mujeres + sexo_no_especificado))
+  porcentaje <- mutate(porcentaje, pct_positivos_promedio = frollmean(x = pct_positivos, 14))
+  
+  foo <- left_join(historico, casos_nuevos, by = "FECHA")
+  bar <- left_join(foo, pendientes, by = "FECHA")
+  data <- left_join(bar, porcentaje, by = "FECHA")
+  
+  fig <- plot_ly(data, x = ~FECHA)
+  fig <- fig %>% add_trace(y = ~casos_anteriores, type = "bar", name = "Casos Previos", marker = list(color = light_yellow))
+  fig <- fig %>% add_trace(y = ~casos_pendientes, type = "bar", name = "Casos Pendientes", marker = list(color = light_green))
+  fig <- fig %>% add_trace(y = ~casos_nuevos, type = "bar", name = "Casos Nuevos", marker = list(color = light_red))
+  fig <- fig %>% add_trace(y = ~pct_positivos_promedio, type = "scatter", mode = "lines", name = "Porcentaje Positividad", yaxis = "y2", line = list(shape= "spline", smoothing = 3, color = light_blue))
+  
+  fig <- fig %>% layout(barmode = "stack", yaxis2 = list( showline = T, side = "right", overlaying = "y", title = "Porcentaje Casos Positivos", fixedrange = TRUE, automargin = T, tickformat = ".2%"), yaxis = list( title = "Escala", fixedrange = TRUE, showline = T), legend = l, hovermode = "compare", xaxis = list(range = c(as.Date("2020-03-18"), today()),fixedrange = TRUE, title = "", showline = T), title = list(text = "F2 - Casos Nuevos por Fecha de Sintomas", anchor = "left", xref = "paper", x=0))
   fig <- fig %>% add_annotations(text =  paste("Distribucion de los casos nuevos reportados el dia de hoy<br>por fecha de inicio de sintomas."),
                                  xref = "paper", yref = "paper", x = 0.01, y = 0.9,
                                  xanchor = "left", yanchor = "middle", showarrow = F, align = "left")
   fig
 }
+
+
 
 mvg_avg_ratio <- function(data, data_source = 1){
   
@@ -228,10 +233,10 @@ growth_doubling_time <- function(data, data_source = 1){
   
   fig <- plot_ly(data, x = ~FECHA, y = ~avg_growth, type = 'scatter', mode = 'lines', name = "Crecimiento Porcentual Promedio", line = list(shape= "spline", smoothing = 3, showline = T, color = light_green, width = 1))
   fig <- fig %>% add_trace(y = ~doubling, name = "Tiempo de Duplicacion", yaxis = "y2", line = list(shape= "spline", smoothing = 3, showline = T, color = light_yellow))
-  fig <- fig %>% layout(hovermode = "x", yaxis2 = list(showline = T, side = "right", overlaying = "y", title = "Tiempo de Duplicacion",fixedrange = TRUE, automargin = T), yaxis = list(showline = T, title = "Crecimiento Porcentual", fixedrange = TRUE, range = c(0, 0.15), tickformat = ".2%"), xaxis = list(fixedrange = TRUE, title = ""), legend = l, title = list(text = "F4 - Crecimiento Porcentual v Duplicacion de Tiempo", anchor = "left", xref = "paper", x=0))
+  fig <- fig %>% layout(hovermode = "x", yaxis2 = list(showline = T, side = "right", overlaying = "y", title = "Tiempo de Duplicacion",fixedrange = TRUE, automargin = T, range = c(0,100)), yaxis = list(showline = T, title = "Crecimiento Porcentual", fixedrange = TRUE, range = c(0, 0.15), tickformat = ".2%"), xaxis = list(fixedrange = TRUE, title = ""), legend = l, title = list(text = "F4 - Crecimiento Porcentual v Duplicacion de Tiempo", anchor = "left", xref = "paper", x=0))
   if(data_source == 1){
     fig <- fig %>% layout(shapes = list(list(type="rect", fillcolor = light_ocean, line=list(color = light_ocean), opacity = 1, x0=today() - days(12), x1 = today() - days(0), xref = "x", y0=min(0), y1=max(0.15), yref = "y")))
-    note_a <- percent(subset(data, FECHA == today() - days(12))$avg_growth, accuracy = 0.01)
+    note_a <- percent(subset(data, FECHA == today() - days(12))$avg_growth)
     ypos_a <- subset(data, FECHA == today() - days(12))$avg_growth
     
     note_b <- format(subset(data, FECHA == today() - days(12))$doubling, big.mark = ",", scientific = F, digits = 0, nsmall = 0) 
@@ -240,7 +245,7 @@ growth_doubling_time <- function(data, data_source = 1){
     note_date <- format(subset(data, FECHA == today() - days(12))$FECHA, "%b %d")
     xpos <- subset(data, FECHA == today() - days(12))$FECHA
   } else {
-      note_a <- percent(tail(data,1)$avg_growth, accuracy = 0.01)
+      note_a <- percent(tail(data,1)$avg_growth)
       ypos_a <- tail(data,1)$avg_growth
 
       note_b <- format(tail(data,1)$doubling, big.mark = ",", scientific = F, digits = 0, nsmall = 0) 

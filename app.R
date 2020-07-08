@@ -11,6 +11,25 @@ library(shiny)
 library(plotly)
 source("functions.r")
 
+entidades <- catalogo[["Catálogo de ENTIDADES"]]$ENTIDAD_FEDERATIVA[1:32]
+entidades <- append("TODOS LOS ESTADOS",entidades)
+
+municipios <- c("TODOS")
+
+index_entidades <- catalogo[["Catálogo de ENTIDADES"]]
+index_municipios <- catalogo[["Catálogo MUNICIPIOS"]]
+
+get_cities <- function(entidad){
+  clave_entidad <- ""
+  municipios <- c("TODOS")
+  if(entidad != "TODOS LOS ESTADOS"){
+    clave_entidad <- index_entidades[index_entidades["ENTIDAD_FEDERATIVA"]==entidad,]$CLAVE_ENTIDAD
+    
+    municipios <- append(municipios, subset(index_municipios, CLAVE_ENTIDAD == clave_entidad)$MUNICIPIO)
+  }
+}
+
+
 # Define UI for application
 ui <- fluidPage(
 
