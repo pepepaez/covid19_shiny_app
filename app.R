@@ -35,27 +35,41 @@ ui <- fluidPage(
 
     # Application title
     titlePanel("COVID19 - Mexico - Reporte Diario"),
-    fluidRow(
-        column(3,
-               selectInput("entidad", "Estado:", entidades)),
-        column(3,
-               selectInput("municipio", "Municipio:", municipios)),
-        column(3,
-               radioButtons("fuente", "Fuente:", c("Por Fecha de Captura", "Por Fecha de Sintomas")))),
-    column(6, plotlyOutput("topChart")),
-    column(6, plotlyOutput("distCases")),
+    tabsetPanel(type = "tabs",
+                tabPanel("Graficas Principales",
+                  fluidRow(
+                      column(3,
+                             selectInput("entidad", "Estado:", entidades)),
+                      column(3,
+                             selectInput("municipio", "Municipio:", municipios)),
+                      column(3,
+                             radioButtons("fuente", "Fuente:", c("Por Fecha de Captura", "Por Fecha de Sintomas")))),
+                  column(6, plotlyOutput("topChart")),
+                  column(6, plotlyOutput("distCases")),
+              
+                  fluidRow(
+                      column(6,
+                             plotlyOutput("mvg_avg_ratio")),
+                      column(6,
+                             plotlyOutput("growth_doubling_time"))
+                  ),
+                  fluidRow(
+                      column(6,
+                             plotlyOutput("cases_by_condition")),
+                      column(6,
+                             plotlyOutput("test_result"))
+                  ),
 
-    fluidRow(
-        column(6,
-               plotlyOutput("mvg_avg_ratio")),
-        column(6,
-               plotlyOutput("growth_doubling_time"))
-    ),
-    fluidRow(
-        column(6,
-               plotlyOutput("cases_by_condition")),
-        column(6,
-               plotlyOutput("test_result"))
+                ),
+                tabPanel("Reporte por Estado",
+                         fluidRow(
+                           column(12,
+                                  h3("Este reporte toma los casos en base a la fecha en que se iniciaron sintomas, por esto los datos que se representan tienen un desfase con la informacion que se presenta en los reportes de la Secretaria de Salud."))
+                         ),
+                         fluidRow(
+                           column(12,
+                                  gt_output("data_table_all"))
+                         ))
     )
     # fluidRow(
     #   column(12,
@@ -168,6 +182,10 @@ server <- function(input, output, session) {
     
     output$test_result <- renderPlotly({
       test_result(data_set(), data_source())
+    })
+    
+    output$data_table_all <- render_gt({
+      gtt %>% cols_align(align = "center")
     })
     
     # output$all_charts <- renderPlotly({

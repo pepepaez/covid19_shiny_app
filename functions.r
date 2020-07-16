@@ -7,11 +7,12 @@ library(scales)
 
 #load("./data/datos.Rdata")
 load("./data/catalogo.Rdata")
+load("./data/datos.Rdata")
 
-load("./data/por_captura.Rdata")
-load("./data/por_sintomas.Rdata")
-load("./data/casos_nuevos.Rdata")
-load("./data/dia_previo.Rdata")
+#load("./data/por_captura.Rdata")
+#load("./data/por_sintomas.Rdata")
+#load("./data/casos_nuevos.Rdata")
+#load("./data/dia_previo.Rdata")
 
 #datos <- datos %>% filter(as.Date(FECHA_SINTOMAS) >= dmy("18/03/2020"))
 
@@ -339,6 +340,7 @@ test_result <- function(data, data_source = 1){
   
   data <- dcast(data, FECHA ~ RESULTADO, sum)
   colnames(data) <- c("FECHA", "Positivo", "Negativo", "Pendiente")
+  data$total <- data$Positivo + data$Negativo + data$Pendiente
   data <- data %>% mutate(Positivo = ifelse(Positivo == 0, NA, Positivo)) %>% tidyr::fill(Positivo, .direction = c("down"))
   data <- data %>% mutate(Negativo = ifelse(Negativo == 0, NA, Negativo)) %>% tidyr::fill(Negativo, .direction = c("down"))
   
@@ -346,7 +348,8 @@ test_result <- function(data, data_source = 1){
   fig <- plot_ly(data, x = ~FECHA, y = ~Positivo, type = 'scatter', mode = 'lines', name = "Positivo", line = list(shape= "spline", smoothing = 3, color = light_red, width = 1))
   fig <- fig %>% add_trace(y = ~Negativo, name = "Negativo", line = list(shape= "spline", smoothing = 3, color = light_green))
   fig <- fig %>% add_trace(y = ~Pendiente, name = "Pendiente", line = list(shape= "spline", smoothing = 3, color = light_yellow))
-  fig <- fig %>% layout(hovermode = "x", legend = l, yaxis = list(showline = T, title="",fixedrange = TRUE), xaxis = list(showline = T, fixedrange = TRUE, title = ""), title = list(text = "F6 - Acumulado por Resultado de Prueba", anchor = "left", xref = "paper", x=0))
+  fig <- fig %>% add_trace(y = ~total, name = "Total", yaxis = "y2", line = list(shape = "spline", smoothing = 3, color = light_blue))
+  fig <- fig %>% layout(hovermode = "x", legend = l, yaxis2 = list(type = "log", showline = T, side = "right", overlaying = "y", title = "Reportes Totales",fixedrange = TRUE, automargin = T), yaxis = list(showline = T, title="",fixedrange = TRUE), xaxis = list(showline = T, fixedrange = TRUE, title = ""), title = list(text = "F6 - Acumulado por Resultado de Prueba", anchor = "left", xref = "paper", x=0))
   if(data_source == 1){
     fig <- fig %>% layout(shapes = list(list(type="rect", fillcolor = light_ocean, line=list(color = light_ocean), opacity = 1, x0=today() - days(12), x1 = today(), xref = "x", y0=min(0), y1=max(c(max(data$Positivo, na.rm = T),max(data$Negativo, na.rm = T),max(data$Pendiente, na.rm = T))), yref = "y")))
     
