@@ -11,13 +11,6 @@ library(scales)
 load("./data/catalogo.Rdata")
 load("./data/datos.Rdata")
 
-entidades <- catalogo[["Catálogo de ENTIDADES"]]$ENTIDAD_FEDERATIVA[1:32]
-entidades <- append("TODOS LOS ESTADOS",entidades)
-
-municipios <- c("TODOS")
-
-index_entidades <- catalogo[["Catálogo de ENTIDADES"]]
-index_municipios <- catalogo[["Catálogo MUNICIPIOS"]]
 
 create_data_frame <- function(){
   datos <- por_sintomas
@@ -29,6 +22,8 @@ create_data_frame <- function(){
                                                                  negativos = sum(hombres[RESULTADO == 2] + mujeres[RESULTADO == 2] + sexo_no_especificado[RESULTADO == 2]),
                                                                  pendientes = sum(hombres[RESULTADO == 3] + mujeres[RESULTADO == 3] + sexo_no_especificado[RESULTADO == 3]),
                                                                  pct_positividad = positivos / (positivos + negativos + pendientes))
+  
+  index_entidades <- catalogo[["Catálogo de ENTIDADES"]]
   
   temp_index_entidades <- index_entidades
   temp_index_entidades$ENTIDAD_RES <- as.integer(temp_index_entidades$CLAVE_ENTIDAD)
@@ -55,7 +50,18 @@ create_data_frame <- function(){
     
     z <- dcast(comp_days, ENTIDAD_RES ~ FECHA, value.var = "ratio")  
     
-    colnames(z) <- c("ENTIDAD_RES", "Tasa")
+    ratio_days <- ent_data %>% filter(FECHA <= today() - days(14))
+    ratio_days$ENTIDAD_RES <- entidad
+    ratio_days$lower <- ifelse(ratio_days$ratio < 1,1,0)
+    ratio_days <- ratio_days %>%
+      group_by(grp = rleid(lower)) %>%
+      mutate(lower_count = cumsum(lower))
+    
+    z$lower_count <- tail(ratio_days,1)$lower_count
+    
+    colnames(z) <- c("ENTIDAD_RES", "Tasa", "Tasa Menor 1.00")
+    
+    
     if(is.null(resultado)){
       resultado <- z
     } else {
@@ -145,3 +151,4 @@ create_data_frame <- function(){
 }
 
 
+zz <- create_data_frame()

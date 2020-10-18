@@ -4,6 +4,7 @@ library(lubridate)
 library(data.table)
 library(reshape2)
 library(scales)
+library(gt)
 
 #load("./data/datos.Rdata")
 load("./data/catalogo.Rdata")
@@ -234,10 +235,10 @@ growth_doubling_time <- function(data, data_source = 1){
   
   fig <- plot_ly(data, x = ~FECHA, y = ~avg_growth, type = 'scatter', mode = 'lines', name = "Crecimiento Porcentual Promedio", line = list(shape= "spline", smoothing = 3, showline = T, color = light_green, width = 1))
   fig <- fig %>% add_trace(y = ~doubling, name = "Tiempo de Duplicacion", yaxis = "y2", line = list(shape= "spline", smoothing = 3, showline = T, color = light_yellow))
-  fig <- fig %>% layout(hovermode = "x", yaxis2 = list(showline = T, side = "right", overlaying = "y", title = "Tiempo de Duplicacion",fixedrange = TRUE, automargin = T, range = c(0,100)), yaxis = list(showline = T, title = "Crecimiento Porcentual", fixedrange = TRUE, range = c(0, 0.15), tickformat = ".2%"), xaxis = list(fixedrange = TRUE, title = ""), legend = l, title = list(text = "F4 - Crecimiento Porcentual v Duplicacion de Tiempo", anchor = "left", xref = "paper", x=0))
+  
   if(data_source == 1){
     fig <- fig %>% layout(shapes = list(list(type="rect", fillcolor = light_ocean, line=list(color = light_ocean), opacity = 1, x0=today() - days(12), x1 = today() - days(0), xref = "x", y0=min(0), y1=max(0.15), yref = "y")))
-    note_a <- percent(subset(data, FECHA == today() - days(12))$avg_growth)
+    note_a <- percent(subset(data, FECHA == today() - days(12))$avg_growth, accuracy = 0.01)
     ypos_a <- subset(data, FECHA == today() - days(12))$avg_growth
     
     note_b <- format(subset(data, FECHA == today() - days(12))$doubling, big.mark = ",", scientific = F, digits = 0, nsmall = 0) 
@@ -246,7 +247,7 @@ growth_doubling_time <- function(data, data_source = 1){
     note_date <- format(subset(data, FECHA == today() - days(12))$FECHA, "%b %d")
     xpos <- subset(data, FECHA == today() - days(12))$FECHA
   } else {
-      note_a <- percent(tail(data,1)$avg_growth)
+      note_a <- percent(tail(data,1)$avg_growth, accuracy = 0.01)
       ypos_a <- tail(data,1)$avg_growth
 
       note_b <- format(tail(data,1)$doubling, big.mark = ",", scientific = F, digits = 0, nsmall = 0) 
@@ -255,7 +256,7 @@ growth_doubling_time <- function(data, data_source = 1){
       xpos <- tail(data,1)$FECHA
       note_date <- format(tail(data,1)$FECHA, "%b %d")
     }
-  
+  fig <- fig %>% layout(hovermode = "x", yaxis2 = list(showline = T, side = "right", overlaying = "y", title = "Tiempo de Duplicacion",fixedrange = TRUE, automargin = T, range = c(0,ypos_b*1.2)), yaxis = list(showline = T, title = "Crecimiento Porcentual", fixedrange = TRUE, range = c(0, 0.15), tickformat = ".2%"), xaxis = list(fixedrange = TRUE, title = ""), legend = l, title = list(text = "F4 - Crecimiento Porcentual v Duplicacion de Tiempo", anchor = "left", xref = "paper", x=0))
   fig <- fig %>% add_annotations(text=paste('Crecimiento Porcentual:', note_a,"<br>",note_date),
                                  xref = "x", yref= "y", x = xpos, y = ypos_a, 
                                  xanchor = "right", yanchor = "middle", showarrow = T, font = list(color = dark_green),
@@ -329,7 +330,7 @@ cases_by_condition <- function(data, data_source = 1){
 
 test_result <- function(data, data_source = 1){
   
-  #  data <- data %>% filter(RESULTADO == 1)
+  data <- data %>% filter(RESULTADO %in% c(1,2,3))
   
   if(data_source == 1){
     data <- data %>% group_by(FECHA, RESULTADO)  %>% summarise(casos = sum(hombres + mujeres + sexo_no_especificado))
