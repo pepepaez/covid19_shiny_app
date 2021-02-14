@@ -42,8 +42,9 @@ ui <- fluidPage(
                              selectInput("entidad", "Estado:", entidades)),
                       column(3,
                              selectInput("municipio", "Municipio:", municipios)),
-                      column(3,
-                             radioButtons("fuente", "Fuente:", c("Por Fecha de Captura", "Por Fecha de Sintomas")))),
+                      #column(3,
+                      #       radioButtons("fuente", "Fuente:", c("Por Fecha de Captura", "Por Fecha de Sintomas")))
+                      ),
                   column(6, plotlyOutput("topChart")),
                   column(6, plotlyOutput("distCases")),
               
@@ -65,11 +66,13 @@ ui <- fluidPage(
                          fluidRow(
                            column(12,
                                   h3("Este reporte toma los casos en base a la fecha en que se iniciaron sintomas, por esto los datos que se representan tienen un desfase con la informacion que se presenta en los reportes de la Secretaria de Salud."))
-                         ),
-                         fluidRow(
-                           column(12,
-                                  gt_output("data_table_all"))
-                         ))
+                          )
+                         ,
+                          fluidRow(
+                            column(12,
+                                   gt_output("data_table_all"))
+                         )
+                         )
     )
     # fluidRow(
     #   column(12,
@@ -92,11 +95,31 @@ server <- function(input, output, session) {
     })
   
   data_set = reactive({
-    if(input$fuente == "Por Fecha de Captura"){
-      datos <- por_captura
-    } else {
+    #if(input$fuente == "Por Fecha de Captura"){
+    #  datos <- por_captura
+    #} else {
       datos <- por_sintomas
+    #}
+    colnames(datos) <- append("FECHA",colnames(datos)[-1])
+    if(input$entidad == "TODOS LOS ESTADOS"){
+      datos
+    } else {
+      clave_entidad <- index_entidades[index_entidades["ENTIDAD_FEDERATIVA"]==input$entidad,]$CLAVE_ENTIDAD
+      if(input$municipio == "TODOS"){
+        subset(datos, ENTIDAD_RES == as.integer(clave_entidad))
+      } else {
+        clave_municipio <- index_municipios[index_municipios["MUNICIPIO"]==input$municipio,]$CLAVE_MUNICIPIO
+        subset(datos, ENTIDAD_RES == as.integer(clave_entidad) & MUNICIPIO_RES == as.integer(clave_municipio) )
+      }
     }
+  })
+  
+  data_set_top_chart = reactive({
+    #if(input$fuente == "Por Fecha de Captura"){
+    #  datos <- por_captura
+    #} else {
+    datos <- por_captura
+    #}
     colnames(datos) <- append("FECHA",colnames(datos)[-1])
     if(input$entidad == "TODOS LOS ESTADOS"){
       datos
@@ -142,11 +165,11 @@ server <- function(input, output, session) {
   })
   
   data_source = reactive({
-    if(input$fuente == "Por Fecha de Captura"){
-      2
-    } else {
+    #if(input$fuente == "Por Fecha de Captura"){
+    #  2
+    #} else {
       1
-    }
+    #}
   })
     
     output$log_chart_text <- renderText({
@@ -161,7 +184,7 @@ server <- function(input, output, session) {
     })
 
     output$topChart <- renderPlotly({
-       topchart(data_set(), data_source())
+       topchart(data_set_top_chart(), data_source())
     })
     
     output$distCases <- renderPlotly({
